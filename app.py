@@ -1,20 +1,3 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import sqlite3
-
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
-)
-
-# Modelo para actualizar número con nombre y estado
-class ActualizaNumero(BaseModel):
-    estado: str
-    nombre: str = ""
-
-# Inicializa la base de datos
 def init_db():
     conn = sqlite3.connect("rifa.db")
     c = conn.cursor()
@@ -22,47 +5,19 @@ def init_db():
     CREATE TABLE IF NOT EXISTS numeros (
         numero INTEGER PRIMARY KEY,
         estado TEXT NOT NULL,
-        nombre TEXT
+        nombre TEXT,
+        vendedor TEXT
     )
     """)
+    # Rellenar los campos faltantes si la tabla existe pero sin columna vendedor
+    try:
+        c.execute("ALTER TABLE numeros ADD COLUMN vendedor TEXT")
+    except:
+        pass
     c.execute("SELECT COUNT(*) FROM numeros")
-    if c.fetchone()[0] < 99:
+    if c.fetchone()[0] < 100:
         c.execute("DELETE FROM numeros")
-        for n in range(0, 100):
-            c.execute("INSERT INTO numeros (numero, estado, nombre) VALUES (?, ?, ?)", (n, "disponible", ""))
+        for n in range(1, 101):
+            c.execute("INSERT INTO numeros (numero, estado, nombre, vendedor) VALUES (?, ?, ?, ?)", (n, "disponible", "", ""))
     conn.commit()
     conn.close()
-
-init_db()
-
-def get_all():
-    conn = sqlite3.connect("rifa.db")
-    c = conn.cursor()
-    c.execute("SELECT numero, estado, nombre FROM numeros")
-    items = [{"numero": row[0], "estado": row[1], "nombre": row[2] or ""} for row in c.fetchall()]
-    conn.close()
-    return items
-
-@app.get("/api/numeros")
-def numeros():
-    return get_all()
-
-@app.post("/api/numeros/{numero}/estado")
-def cambiar_estado(numero: int, data: ActualizaNumero):
-    if data.estado not in ["disponible", "vendido"]:
-        raise HTTPException(status_code=400, detail="Estado inválido")
-    conn = sqlite3.connect("rifa.db")
-    c = conn.cursor()
-    c.execute("UPDATE numeros SET estado = ?, nombre = ? WHERE numero = ?", (data.estado, data.nombre, numero))
-    conn.commit()
-    conn.close()
-    return {"ok": True}
-
-@app.post("/api/reset")
-def reset():
-    conn = sqlite3.connect("rifa.db")
-    c = conn.cursor()
-    c.execute("UPDATE numeros SET estado = 'disponible', nombre = ''")
-    conn.commit()
-    conn.close()
-    return {"ok": True}
