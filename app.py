@@ -68,5 +68,11 @@ def reset():
     c = conn.cursor()
     c.execute("UPDATE numeros SET estado = 'disponible', nombre = '', vendedor = ''")
     conn.commit()
+    
+    from fastapi.responses import FileResponse
+    @app.get("/api/backup", response_class=FileResponse)
+    def backup():
+    return FileResponse("rifa.db", media_type='application/octet-stream', filename="rifa.db")
+    
     conn.close()
     return {"ok": True}
