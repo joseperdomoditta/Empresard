@@ -12,26 +12,28 @@ function autenticarAdmin() {
 }
 autenticarAdmin();
 
+
 // GET todos los números
 async function cargarDatos() {
   const res = await fetch(`${API_URL}/numeros`);
   return await res.json();
 }
 
-// POST para cambiar estado/registrar comprador
-async function enviarEstado(numero, estado, nombre) {
+// POST para cambiar estado/registrar comprador + vendedor
+async function enviarEstado(numero, estado, nombre, vendedor) {
   await fetch(`${API_URL}/numeros/${numero}/estado`, {
     method: "POST",
     headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ estado, nombre })
+    body: JSON.stringify({ estado, nombre, vendedor })
   });
 }
 
-// POST para resetear rifa
+// POST para resetear rifa (solo admin)
 async function resetearRifa() {
   await fetch(`${API_URL}/reset`, {method: "POST"});
 }
 
+// Renderiza la cuadrícula
 function renderizarCuadricula(items) {
   const grid = document.getElementById("numbersGrid");
   grid.innerHTML = "";
@@ -40,20 +42,21 @@ function renderizarCuadricula(items) {
     btn.className = `number-btn ${item.estado}`;
     btn.innerText = item.numero.toString().padStart(2,"0");
 
-    // Si el número está vendido y es admin, muestra el nombre
-    if(item.estado === "vendido" && esAdmin && item.nombre) {
-      const nombre = document.createElement("div");
-      nombre.className = "nombre-vendedor";
-      nombre.innerText = item.nombre;
-      btn.appendChild(nombre);
-      btn.title = `Vendido a: ${item.nombre}`;
+    // Muestra nombre del comprador debajo del número vendido (para todos)
+    if(item.estado === "vendido" && item.nombre) {
+      const nombreDiv = document.createElement("div");
+      nombreDiv.className = "nombre-vendedor";
+      nombreDiv.innerText = item.nombre;
+      btn.appendChild(nombreDiv);
+      btn.title = `Comprador: ${item.nombre}` + (item.vendedor ? `\nVendedor: ${item.vendedor}` : "");
     }
 
     if(item.estado === "disponible") {
       btn.onclick = async () => {
-        const nombre = prompt("Ingrese nombre del comprador:");
+        const nombre = prompt("Ingrese NOMBRE del comprador:");
         if (!nombre || nombre.trim() === "") return;
-        await enviarEstado(item.numero, "vendido", nombre.trim());
+        const vendedor = prompt("Ingrese NOMBRE del vendedor (si aplica):");
+        await enviarEstado(item.numero, "vendido", nombre.trim(), vendedor ? vendedor.trim() : "");
         await inicializar();
       };
     } else {
@@ -63,6 +66,7 @@ function renderizarCuadricula(items) {
   }
 }
 
+// Actualiza contadores de vendidos/disponibles
 function renderizarContadores(items) {
   const disponibles = items.filter(x => x.estado === "disponible").length;
   const vendidos = items.filter(x => x.estado === "vendido").length;
@@ -70,10 +74,56 @@ function renderizarContadores(items) {
   document.getElementById("vendidos").innerText = `Vendidos: ${vendidos}`;
 }
 
+// Lista de compradores para el administrador (debajo de la cuadrícula)
+function renderizarListaCompradores(items) {
+  let div = document.getElementById('compradoresList');
+  if (!esAdmin) {
+    if (div) div.innerHTML = "";
+    return;
+  }
+  let vendidos = items.filter(x => x.estado === "vendido");
+  if (vendidos.length === 0) {
+    div.innerHTML = "<b>No hay ventas registradas aún.</b>";
+    return;
+  }
+  let tabla = `<table border="1" cellpadding="5" style="border-collapse:collapse;width:auto;"><tr><th>Número</th><th>Comprador</th><th>Vendedor</th></tr>`;
+  vendidos.forEach(item => {
+    tabla += `<tr>
+      <td>${item.numero.toString().padStart(2, "0")}</td>
+      <td>${item.nombre}</td>
+      <td>${item.vendedor || ""}</td>
+    </tr>`;
+  });
+  tabla += `</table>
+    <button id="descargarCsvBtn">Descargar CSV</button>`;
+  div.innerHTML = tabla;
+
+  document.getElementById("descargarCsvBtn").onclick = () => {
+    descargarCSV(vendidos);
+  }
+}
+
+// Exportar lista de compradores a CSV
+function descargarCSV(items) {
+  let csv = "Numero,Comprador,Vendedor\n";
+  items.forEach(item => {
+    let nombre = (item.nombre || "").replace(/\n/g, " ").replace(/,/g, " ");
+    let vendedor = (item.vendedor || "").replace(/\n/g, " ").replace(/,/g, " ");
+    csv += `${item.numero.toString().padStart(2, "0")},${nombre},${vendedor}\n`;
+  });
+  let blob = new Blob([csv], {type: "text/csv"});
+  let link = document.createElement("a");
+  link.href = window.URL.createObjectURL(blob);
+  link.download = "lista_rifa.csv";
+  link.click();
+}
+
+// Inicialización general
 async function inicializar() {
   const datos = await cargarDatos();
   renderizarCuadricula(datos);
   renderizarContadores(datos);
+  renderizarListaCompradores(datos);
 }
 
 // Reset solo si es admin
