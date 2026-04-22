@@ -1,6 +1,6 @@
-# app.py
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import sqlite3
 
 app = FastAPI()
@@ -9,19 +9,27 @@ app.add_middleware(
     allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
 
+# Modelo para actualizar número con nombre y estado
+class ActualizaNumero(BaseModel):
+    estado: str
+    nombre: str = ""
+
+# Inicializa la base de datos
 def init_db():
     conn = sqlite3.connect("rifa.db")
     c = conn.cursor()
     c.execute("""
     CREATE TABLE IF NOT EXISTS numeros (
         numero INTEGER PRIMARY KEY,
-        estado TEXT NOT NULL
-    )""")
+        estado TEXT NOT NULL,
+        nombre TEXT
+    )
+    """)
     c.execute("SELECT COUNT(*) FROM numeros")
     if c.fetchone()[0] < 100:
         c.execute("DELETE FROM numeros")
-        for n in range(1, 101):
-            c.execute("INSERT INTO numeros (numero, estado) VALUES (?, ?)", (n, "disponible"))
+        for n in range(0, 99):
+            c.execute("INSERT INTO numeros (numero, estado, nombre) VALUES (?, ?, ?)", (n, "disponible", ""))
     conn.commit()
     conn.close()
 
@@ -30,8 +38,8 @@ init_db()
 def get_all():
     conn = sqlite3.connect("rifa.db")
     c = conn.cursor()
-    c.execute("SELECT numero, estado FROM numeros")
-    items = [{"numero": row[0], "estado": row[1]} for row in c.fetchall()]
+    c.execute("SELECT numero, estado, nombre FROM numeros")
+    items = [{"numero": row[0], "estado": row[1], "nombre": row[2] or ""} for row in c.fetchall()]
     conn.close()
     return items
 
@@ -40,12 +48,12 @@ def numeros():
     return get_all()
 
 @app.post("/api/numeros/{numero}/estado")
-def cambiar_estado(numero: int, estado: str):
-    if estado not in ["disponible", "vendido"]:
+def cambiar_estado(numero: int, data: ActualizaNumero):
+    if data.estado not in ["disponible", "vendido"]:
         raise HTTPException(status_code=400, detail="Estado inválido")
     conn = sqlite3.connect("rifa.db")
     c = conn.cursor()
-    c.execute("UPDATE numeros SET estado = ? WHERE numero = ?", (estado, numero))
+    c.execute("UPDATE numeros SET estado = ?, nombre = ? WHERE numero = ?", (data.estado, data.nombre, numero))
     conn.commit()
     conn.close()
     return {"ok": True}
@@ -54,7 +62,7 @@ def cambiar_estado(numero: int, estado: str):
 def reset():
     conn = sqlite3.connect("rifa.db")
     c = conn.cursor()
-    c.execute("UPDATE numeros SET estado = 'disponible'")
+    c.execute("UPDATE numeros SET estado = 'disponible', nombre = ''")
     conn.commit()
     conn.close()
     return {"ok": True}
