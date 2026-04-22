@@ -1,4 +1,16 @@
 const API_URL = "https://empresard-1.onrender.com/api";
+const ADMIN_PASS = "@Joseper37965V1L2"; // Cambia esto por una clave fuerte
+
+let esAdmin = false;
+
+// Pregunta si eres admin al cargar la página
+function autenticarAdmin() {
+  const clave = prompt("¿Eres administrador? Ingresa contraseña o déjalo vacío si eres usuario normal.");
+  if (clave === ADMIN_PASS) {
+    esAdmin = true;
+  }
+}
+autenticarAdmin();
 
 // GET todos los números
 async function cargarDatos() {
@@ -20,7 +32,6 @@ async function resetearRifa() {
   await fetch(`${API_URL}/reset`, {method: "POST"});
 }
 
-// Renderiza la cuadrícula, nombres y color
 function renderizarCuadricula(items) {
   const grid = document.getElementById("numbersGrid");
   grid.innerHTML = "";
@@ -29,8 +40,8 @@ function renderizarCuadricula(items) {
     btn.className = `number-btn ${item.estado}`;
     btn.innerText = item.numero.toString().padStart(2,"0");
 
-    // Muestra el nombre del comprador debajo
-    if(item.estado === "vendido" && item.nombre) {
+    // Si el número está vendido y es admin, muestra el nombre
+    if(item.estado === "vendido" && esAdmin && item.nombre) {
       const nombre = document.createElement("div");
       nombre.className = "nombre-vendedor";
       nombre.innerText = item.nombre;
@@ -38,7 +49,6 @@ function renderizarCuadricula(items) {
       btn.title = `Vendido a: ${item.nombre}`;
     }
 
-    // Sólo permite selección si está disponible
     if(item.estado === "disponible") {
       btn.onclick = async () => {
         const nombre = prompt("Ingrese nombre del comprador:");
@@ -66,13 +76,20 @@ async function inicializar() {
   renderizarContadores(datos);
 }
 
-// Evento de reset
+// Reset solo si es admin
 document.addEventListener("DOMContentLoaded", () => {
   inicializar();
-  document.getElementById("resetBtn").onclick = async () => {
-    if (confirm("¿Seguro que quieres resetear la rifa?")) {
-      await resetearRifa();
-      await inicializar();
-    }
-  };
+  // Muestra/reset solo si es admin
+  const btn = document.getElementById("resetBtn");
+  if (esAdmin) {
+    btn.style.display = "inline-block";
+    btn.onclick = async () => {
+      if (confirm("¿Seguro que quieres resetear la rifa?")) {
+        await resetearRifa();
+        await inicializar();
+      }
+    };
+  } else {
+    btn.style.display = "none";
+  }
 });
