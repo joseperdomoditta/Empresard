@@ -34,7 +34,7 @@ def init_db():
     c.execute("SELECT COUNT(*) FROM numeros")
     if c.fetchone()[0] < 100:
         c.execute("DELETE FROM numeros")
-        for n in range(1, 101):
+        for n in range(1, 100):
             c.execute("INSERT INTO numeros (numero, estado, nombre, vendedor) VALUES (?, ?, ?, ?)", (n, "disponible", "", ""))
     conn.commit()
     conn.close()
