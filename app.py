@@ -26,9 +26,9 @@ def init_db():
     )
     """)
     c.execute("SELECT COUNT(*) FROM numeros")
-    if c.fetchone()[0] < 100:
+    if c.fetchone()[0] < 99:
         c.execute("DELETE FROM numeros")
-        for n in range(0, 99):
+        for n in range(0, 100):
             c.execute("INSERT INTO numeros (numero, estado, nombre) VALUES (?, ?, ?)", (n, "disponible", ""))
     conn.commit()
     conn.close()
