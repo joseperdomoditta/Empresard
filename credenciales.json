@@ -1,1 +1,13 @@
-
+{
+  "type": "service_account",
+  "project_id": "rifa-sheets-494202",
+  "private_key_id": "cf6966e2467b66e90b45d5eb116dd6dc42414888",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCtxMPeTMX7Bq8W\nbIjTl8p9qcHaPlgGcLt8CbPEfao1dHvCAOChIpp4Z7ZmPY2006KKQ9KfEoLbifvD\n6VnjBqeFyyHbTT/kJ34cCWMPBft5CU+6GNQRfnZ/bmqJPAGrNQuOiUe4kUC58K2Z\nla+JvQFki4gFjO/NZDZQwi9zLBAAFEm/RtnQySL04PLHVy+Wzh9ONmKqmmdWcC34\ngsSgFsPMey+sFZ6XKqOutyQP4pNx2Y/njZk3Oovyl3kK5U7UNFhmtZEUGyX7eaes\nEQB95GmXRUSGAUY974G4/hjYY38huBbRUQ3j3+L7XNiRNQKJfVnnt+zUOKfavIoo\nTL4E87RJAgMBAAECggEASKW1mY+RScRemMphXczc/DJneB2OYYrp5w6LWH+NFHIR\nd2c0gklcOTBq4k2jm9DK6HE4cgakLLKATkSVrsNOcDIfgnbGWlVkdMY74sEGhHCv\nI0dUCchMNDRuV9d9fx1bKokcMf6QB+ymN0qMK9KX7XgkMuXcL4tQ5ex5N/ZY7h7c\njychuDCDDLtxR27LoHUjPaKXwZ51sn1kuU1ajhTalhiuxJPtVdm5x4rXPitUwc9v\nA6K4awfOe4Qo4CG5tkVZjwyP9RnEkC/ODMG5JB8diSvFISWg0HmR0A00utaUKREN\nt2cMnZhZXW611FIQjbcuq7flcNsgQCVqpRZJKSyKnQKBgQDge+wiKOZQmgUriCAb\nMCqzF0rjpD0GvUXWFaKjWTe5ubzddcdACvN57u3wh/ag2BAu8+nJPA1QpqR6DRiU\n/24lH42eA0E8TmeBiLhNLU9XpJ0yFSQlMdlw/yZG7n0xsB671QyQuRe2/PKbtEG8\nO71CLpiaLtVFk0S+HEPf7G3ZAwKBgQDGKhoeR+FfCUuZn859MbgyKB8bAtS3vEIl\n9539Rcr90xDL8efpDA+M7Uq4uv8ojFlaWGRvg0etkqdzceUwOxfhx/HGvm0fDixp\nPLdI4q7JTz8wgjxF+xF5m/Zwu4Qc17hxZV+rMjEK6S091aKpL+HICL3XcjpPLb+o\nvi+fJ4DNwwKBgQCwRP6NcDoxjk+C+DflwXO1/xNCHyQAV70vtvtnctYME2nXJ/WW\nN0MqOtBBsDGb6S0EAWlRJ8N40fGTGRd1YAEYS2eDbSDbfuFN2JKHn42Oz2bT/b/N\nKRCJ5wAicICD9LydV1Svi3ewq3zBgNChQvOAtWAEqcO0B0jSUxWFDnzPCwKBgFPt\nCNrCPqTtXuNVVzKWmBhF/caG0GhwhuNll7fokywk8/wsG7gLr5pT9U1/hQk7R6yH\nuyGvS/ArKFgwaIygumCZOcCebcC1VAHOASIRP01rDqwQvE43IxOKBjmAcVd11VvR\nP09WFoc0ckC59gYJjWoWqbBRZHicO4vP4INbS6XZAoGALYLPLBdLnmn2WLgA9S/P\ncad3TC0G6G2gQwT6ZU2CFBqYdOV8J6dNnY0z4wDRvrHN0oH5ME4W6s3PrGHOlBdK\ncThY/aPVbpoCp/jv2/uOHLK++hJrOH0cDnoc+enx7Ez2iMyNZV6yXTZ/i5UeMhUs\naLvHDmHdhPyGcv6m+LDY8sY=\n-----END PRIVATE KEY-----\n",
+  "client_email": "joseper@rifa-sheets-494202.iam.gserviceaccount.com",
+  "client_id": "105722765874724581410",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/joseper%40rifa-sheets-494202.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
