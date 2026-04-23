@@ -1,78 +1,118 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import sqlite3
+import gspread
+from google.oauth2.service_account import Credentials
 
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
-)
+# ==== CONFIGURACIÓN GOOGLE SHEETS ====
+
+NOMBRE_HOJA = "Rifa_UnidosenOración"  # Cambia al nombre exacto de tu hoja
+HEADER = ["Numero", "Comprador", "Vendedor", "Estado"]
+
+# Autenticación
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+creds = Credentials.from_service_account_file("credenciales.json", scopes=scope)
+client = gspread.authorize(creds)
+sheet = client.open(NOMBRE_HOJA).sheet1
+
+# ==== MODELO ====
 
 class ActualizaNumero(BaseModel):
     estado: str
     nombre: str = ""
     vendedor: str = ""
 
-def init_db():
-    conn = sqlite3.connect("rifa.db")
-    c = conn.cursor()
-    # Asegúrate de tener la columna vendedor
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS numeros (
-        numero INTEGER PRIMARY KEY,
-        estado TEXT NOT NULL,
-        nombre TEXT,
-        vendedor TEXT
-    )
-    """)
-    # Intenta añadir si por error fue creada sin vendedor antes
-    try:
-        c.execute("ALTER TABLE numeros ADD COLUMN vendedor TEXT")
-    except:
-        pass
-    c.execute("SELECT COUNT(*) FROM numeros")
-    if c.fetchone()[0] < 100:
-        c.execute("DELETE FROM numeros")
-        for n in range(0, 100):
-            c.execute("INSERT INTO numeros (numero, estado, nombre, vendedor) VALUES (?, ?, ?, ?)", (n, "disponible", "", ""))
-    conn.commit()
-    conn.close()
+# ==== FASTAPI SETUP ====
 
-init_db()
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
+def normalizar_numero(n):
+    return str(n).zfill(2)
+
+# ==== FUNCIONES PARA GOOGLE SHEETS ====
+
+def buscar_fila_por_numero(numero):
+    num_str = normalizar_numero(numero)
+    try:
+        cell = sheet.find(num_str)
+        if cell.col == 1:  # la columna número debe ser la 1
+            return cell.row
+    except gspread.exceptions.CellNotFound:
+        return None
+    return None
+
+def obtener_todos():
+    rows = sheet.get_all_records()
+    # Completa con disponibles si hay menos de 100 números
+    numeros = {int(str(r["Numero"]).zfill(2)): r for r in rows if str(r["Numero"]).isdigit()}
+    result = []
+    for n in range(1, 101):
+        k = int(str(n).zfill(2))
+        if k in numeros and numeros[k]["Estado"] == "vendido":
+            result.append({
+                "numero": k,
+                "estado": "vendido",
+                "nombre": numeros[k].get("Comprador", ""),
+                "vendedor": numeros[k].get("Vendedor", "")
+            })
+        else:
+            result.append({
+                "numero": k,
+                "estado": "disponible",
+                "nombre": "",
+                "vendedor": ""
+            })
+    return result
+
+def registrar_venta(numero, comprador, vendedor):
+    fila = buscar_fila_por_numero(numero)
+    num_str = normalizar_numero(numero)
+    if fila:
+        # Actualiza la fila existente
+        sheet.update(f"B{fila}", comprador)
+        sheet.update(f"C{fila}", vendedor)
+        sheet.update(f"D{fila}", "vendido")
+    else:
+        # Si no existe, agrega una nueva fila
+        sheet.append_row([num_str, comprador, vendedor, "vendido"])
+
+def resetear_hoja():
+    # Elimina todas las filas excepto el header
+    sheet.resize(1)
+    # Se mantienen los encabezados y la hoja vacía
+    # Opcional: puedes repoblar, pero el frontend ya muestra todo como disponible
+
+# ==== ENDPOINTS ====
 
 @app.get("/api/numeros")
 def numeros():
-    conn = sqlite3.connect("rifa.db")
-    c = conn.cursor()
-    c.execute("SELECT numero, estado, nombre, vendedor FROM numeros")
-    items = [{"numero": row[0], "estado": row[1], "nombre": row[2] or "", "vendedor": row[3] or ""} for row in c.fetchall()]
-    conn.close()
-    return items
+    return obtener_todos()
 
 @app.post("/api/numeros/{numero}/estado")
 def cambiar_estado(numero: int, data: ActualizaNumero):
     if data.estado not in ["disponible", "vendido"]:
         raise HTTPException(status_code=400, detail="Estado inválido")
-    conn = sqlite3.connect("rifa.db")
-    c = conn.cursor()
-    c.execute("UPDATE numeros SET estado = ?, nombre = ?, vendedor = ? WHERE numero = ?",
-              (data.estado, data.nombre, data.vendedor, numero))
-    conn.commit()
-    conn.close()
+    if data.estado == "vendido":
+        if not data.nombre:
+            raise HTTPException(status_code=400, detail="Debe ingresar nombre del comprador")
+        registrar_venta(numero, data.nombre, data.vendedor or "")
+    else:  # disponible: quitar de la hoja si existe
+        fila = buscar_fila_por_numero(numero)
+        if fila:
+            sheet.delete_rows(fila)
     return {"ok": True}
 
 @app.post("/api/reset")
 def reset():
-    conn = sqlite3.connect("rifa.db")
-    c = conn.cursor()
-    c.execute("UPDATE numeros SET estado = 'disponible', nombre = '', vendedor = ''")
-    conn.commit()
-    
-    from fastapi.responses import FileResponse
-    @app.get("/api/backup", response_class=FileResponse)
-    def backup():
-    return FileResponse("rifa.db", media_type='application/octet-stream', filename="rifa.db")
-    
-    conn.close()
+    resetear_hoja()
     return {"ok": True}
